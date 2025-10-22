@@ -3,6 +3,7 @@ import PQueue from "p-queue";
 import { Worker } from "worker_threads";
 import path from "path";
 import cors from "cors";
+import { getSupportedVersions, DEFAULT_VERSION } from "./typst-versions";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,19 +25,21 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "100kb" }));
 
 const queue = new PQueue({ concurrency: MAX_CONCURRENT_JOBS });
 
 interface RenderRequest {
   timeout?: number;
   content?: string;
+  version?: string;
 }
 
 interface SuccessResponse {
   success: true;
   time: number;
   content: string;
+  version: string;
 }
 
 interface ErrorResponse {
@@ -58,7 +61,7 @@ app.post(
         message: "Request body is missing",
       });
     }
-    const { timeout, content } = req.body;
+    const { timeout, content, version } = req.body;
 
     if (!timeout || typeof timeout !== "number" || timeout <= 0) {
       return res.status(400).json({
@@ -95,7 +98,9 @@ app.post(
     const startTime = Date.now();
 
     try {
-      const result = await queue.add(() => renderTypst(content, timeout));
+      const result = await queue.add(() =>
+        renderTypst(content, timeout, version)
+      );
 
       const elapsed = Date.now() - startTime;
 
@@ -104,6 +109,7 @@ app.post(
           success: true,
           time: elapsed,
           content: result.content,
+          version: result.version,
         });
       } else {
         return res.status(400).json({
@@ -128,11 +134,20 @@ app.post(
   }
 );
 
+app.get("/versions", (req: Request, res: Response) => {
+  res.json({
+    versions: getSupportedVersions(),
+    default: DEFAULT_VERSION,
+  });
+});
+
 async function renderTypst(
   content: string,
-  timeout: number
+  timeout: number,
+  version?: string
 ): Promise<
-  { success: true; content: string } | { success: false; message: string }
+  | { success: true; content: string; version: string }
+  | { success: false; message: string }
 > {
   return new Promise((resolve, reject) => {
     const isDev = __filename.endsWith(".ts");
@@ -150,12 +165,21 @@ async function renderTypst(
 
     worker.on(
       "message",
-      (result: { success: boolean; content?: string; message?: string }) => {
+      (result: {
+        success: boolean;
+        content?: string;
+        message?: string;
+        version?: string;
+      }) => {
         clearTimeout(timeoutId);
         worker.terminate();
 
         if (result.success) {
-          resolve({ success: true, content: result.content! });
+          resolve({
+            success: true,
+            content: result.content!,
+            version: result.version!,
+          });
         } else {
           resolve({ success: false, message: result.message! });
         }
@@ -178,7 +202,7 @@ async function renderTypst(
       }
     });
 
-    worker.postMessage(content);
+    worker.postMessage({ content, version });
   });
 }
 

@@ -1,11 +1,41 @@
 import { parentPort } from "worker_threads";
 import { NodeCompiler } from "@myriaddreamin/typst-ts-node-compiler";
+import { getVersionConfig } from "./typst-versions";
 
 if (!parentPort) {
   throw new Error("This file must be run as a worker thread");
 }
 
-parentPort.on("message", (content: string) => {
+parentPort.on(
+  "message",
+  async (message: { content: string; version?: string }) => {
+    const { content, version } = message;
+    const config = getVersionConfig(version);
+
+    if (!config) {
+      parentPort!.postMessage({
+        success: false,
+        message: `Unsupported Typst version: ${version}`,
+      });
+      return;
+    }
+
+    if (config.useNative) {
+      compileWithNative(content, config.version);
+    } else {
+      // Not implemented yet
+
+      parentPort!.postMessage({
+        success: false,
+        message: `WASM compilation not implemented yet for version: ${config.version}`,
+      });
+      await compileWithWasm(content, config.version);
+      return;
+    }
+  }
+);
+
+function compileWithNative(content: string, version: string) {
   let compiler: NodeCompiler | null = null;
 
   try {
@@ -13,11 +43,10 @@ parentPort.on("message", (content: string) => {
 
     const sanitizedContent = content.replace(/\0/g, "");
 
-    // TODO Check
     const hasPageSetup = /^\s*#set\s+page\s*\(/.test(sanitizedContent);
     const finalContent = hasPageSetup
       ? sanitizedContent
-      : `#set page(width: auto, height: auto)\n${sanitizedContent}`;
+      : `#set page(width: auto, height: auto, margin: 10pt)\n${sanitizedContent}`;
 
     const compileResult = compiler.compile({
       mainFileContent: finalContent,
@@ -68,6 +97,7 @@ parentPort.on("message", (content: string) => {
     parentPort!.postMessage({
       success: true,
       content: svg,
+      version,
     });
   } catch (error: any) {
     parentPort!.postMessage({
@@ -81,4 +111,8 @@ parentPort.on("message", (content: string) => {
       } catch (e) {}
     }
   }
-});
+}
+
+async function compileWithWasm(content: string, version: string) {
+  // TODO
+}
