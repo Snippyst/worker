@@ -100,6 +100,8 @@ function compileWithNative(content: string, version: string) {
       version,
     });
   } catch (error: any) {
+    console.error("Compilation error:", error);
+    console.error("Stack trace:", error.stack);
     parentPort!.postMessage({
       success: false,
       message: error.message || "Compilation failed",

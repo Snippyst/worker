@@ -6,7 +6,7 @@ import cors from "cors";
 import { getSupportedVersions, DEFAULT_VERSION } from "./typst-versions";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 const MAX_CONCURRENT_JOBS = parseInt(
   process.env.MAX_CONCURRENT_JOBS || "4",
   10
@@ -189,6 +189,8 @@ async function renderTypst(
     worker.on("error", (error) => {
       clearTimeout(timeoutId);
       worker.terminate();
+      console.error("Worker error:", error);
+      console.error("Stack trace:", error.stack);
       resolve({ success: false, message: error.message || "Worker error" });
     });
 
@@ -216,6 +218,7 @@ app.use((req: Request, res: Response) => {
 
 app.use((err: Error, req: Request, res: Response, next: any) => {
   console.error("Unhandled error:", err);
+  console.error("Stack trace:", err.stack);
   res.status(500).json({
     success: false,
     time: 0,
@@ -223,8 +226,14 @@ app.use((err: Error, req: Request, res: Response, next: any) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Typst worker server running on port ${PORT}`);
   console.log(`Max concurrent jobs: ${MAX_CONCURRENT_JOBS}`);
   console.log(`Queue size: ${QUEUE_SIZE}`);
+});
+
+server.on("error", (error) => {
+  console.error("Failed to start server:");
+  console.error(error);
+  process.exit(1);
 });
