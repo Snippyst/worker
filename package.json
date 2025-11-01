@@ -12,7 +12,6 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@myriaddreamin/typst-ts-node-compiler": "^0.6.1-rc3",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "p-queue": "^9.0.0"

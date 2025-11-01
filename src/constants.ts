@@ -1,0 +1,22 @@
+export const DEFAULT_PORT = 3010;
+
+export const DEFAULT_MAX_CONCURRENT_JOBS = 4;
+
+export const DEFAULT_QUEUE_SIZE = 10;
+
+export const MAX_CONTENT_SIZE = 1024 * 1024;
+
+export const MAX_SVG_SIZE = 2 * 1024 * 1024; // 2MB
+
+export const MAX_REQUEST_BODY_SIZE = "100kb";
+
+export const DEFAULT_COMPILATION_TIMEOUT_MS = 5000;
+
+export const HTTP_STATUS = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  REQUEST_TIMEOUT: 408,
+  INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
+} as const;
