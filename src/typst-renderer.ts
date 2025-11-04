@@ -7,10 +7,9 @@ import { RenderResult } from "./types";
 import { getTypstBinaryPath } from "./cli-installer";
 import { DEFAULT_VERSION } from "./config";
 
-function mergeSVGsVertically(svgPaths: string[]): string {
+function mergeSVGsVertically(svgPaths: string[], padding: number = 10): string {
   const viewBoxRegex = /<svg[^>]*viewBox="([^"]*)"[^>]*>/;
 
-  // Check total file size before reading any files
   let totalSize = 0;
   for (const path of svgPaths) {
     const stats = statSync(path);
@@ -35,25 +34,33 @@ function mergeSVGsVertically(svgPaths: string[]): string {
 
       const contentStart = svg.indexOf(">") + 1;
       const contentEnd = svg.lastIndexOf("</svg>");
-      const content = svg.slice(contentStart, contentEnd);
-      contents.push(content);
+      contents.push(svg.slice(contentStart, contentEnd));
     }
   });
 
   const maxWidth = Math.max(...viewBoxes.map((vb) => vb.w));
-  const totalHeight = viewBoxes.reduce((sum, vb) => sum + vb.h, 0);
-  const mergedViewBox = `0 0 ${maxWidth} ${totalHeight}`;
+  const totalHeight =
+    viewBoxes.reduce((sum, vb) => sum + vb.h, 0) +
+    padding * (viewBoxes.length - 1);
 
   let yOffset = 0;
-  const mergedContent = contents
+  const groups = contents
     .map((content, i) => {
-      const result = `<g transform="translate(0, ${yOffset})">${content}</g>`;
-      yOffset += viewBoxes[i].h;
-      return result;
+      const vb = viewBoxes[i];
+      const group = `<g transform="translate(0,${yOffset})"><rect width="${vb.w}" height="${vb.h}" fill="white"/><g clip-path="url(#c${i})">${content}</g></g>`;
+      yOffset += vb.h + padding;
+      return group;
     })
     .join("");
 
-  return `<svg style="overflow: visible;" class="typst-doc" viewBox="${mergedViewBox}" width="${maxWidth}" height="${totalHeight}" data-width="${maxWidth}" data-height="${totalHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:h5="http://www.w3.org/1999/xhtml">${mergedContent}</svg>`;
+  const clipDefs = viewBoxes
+    .map(
+      (vb, i) =>
+        `<clipPath id="c${i}"><rect width="${vb.w}" height="${vb.h}"/></clipPath>`
+    )
+    .join("");
+
+  return `<svg class="typst-doc" viewBox="0 0 ${maxWidth} ${totalHeight}" width="${maxWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>${clipDefs}</defs>${groups}</svg>`;
 }
 
 export async function renderTypst(
