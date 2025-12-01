@@ -11,6 +11,11 @@ FROM node:22-alpine
 
 RUN apk add --no-cache curl tar xz
 
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    font-roboto font-roboto-mono \
+    font-noto font-noto-extra \
+    font-noto-cjk font-noto-emoji
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
