@@ -8,6 +8,15 @@ export interface TypstVersion {
 
 export const TYPST_VERSIONS: TypstVersion[] = [
   {
+    version: "0.14.2",
+    checksums: {
+      "x86_64-unknown-linux-musl":
+        "a6044cbad2a954deb921167e257e120ac0a16b20339ec01121194ff9d394996d",
+      "aarch64-unknown-linux-musl":
+        "491b101aa40a3a7ea82a3f8a6232cabb4e6a7e233810082e5ac812d43fdcd47a",
+    },
+  },
+  {
     version: "0.14.1",
     checksums: {
       "x86_64-unknown-linux-musl":
