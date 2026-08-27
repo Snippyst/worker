@@ -16,7 +16,7 @@ function mergeSVGsVertically(svgPaths: string[], padding: number = 10): string {
     totalSize += stats.size;
     if (totalSize > MAX_SVG_SIZE) {
       throw new Error(
-        `SVG output exceeds maximum size of ${MAX_SVG_SIZE / (1024 * 1024)}MB`
+        `SVG output exceeds maximum size of ${MAX_SVG_SIZE / (1024 * 1024)}MB`,
       );
     }
   }
@@ -56,7 +56,7 @@ function mergeSVGsVertically(svgPaths: string[], padding: number = 10): string {
   const clipDefs = viewBoxes
     .map(
       (vb, i) =>
-        `<clipPath id="c${i}"><rect width="${vb.w}" height="${vb.h}"/></clipPath>`
+        `<clipPath id="c${i}"><rect width="${vb.w}" height="${vb.h}"/></clipPath>`,
     )
     .join("");
 
@@ -66,7 +66,7 @@ function mergeSVGsVertically(svgPaths: string[], padding: number = 10): string {
 export async function renderTypst(
   content: string,
   timeout: number = DEFAULT_COMPILATION_TIMEOUT_MS,
-  version?: string
+  version?: string,
 ): Promise<RenderResult> {
   const targetVersion = version || DEFAULT_VERSION;
   const tmpDir = mkdtempSync(join(tmpdir(), "typst-"));
